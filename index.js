@@ -1,14 +1,14 @@
 module.exports = function (babel) {
-  const { types: t } = babel;
+  const t = babel.types;
 
   return {
     name: 'ember-legacy-class-constructor',
     visitor: {
       Class(classPath) {
-        for (let path of classPath.get('body.body')) {
+        classPath.get('body.body').forEach(() => {
           // loop over the body to see if a constructor exists
           if (path.node.kind === 'constructor') {
-            const { body } = path.node.body;
+            const body = path.node.body.body;
 
             path.traverse({
               // iterate over the body and look for calls to `super`, convert them
@@ -30,9 +30,9 @@ module.exports = function (babel) {
               // a series of expressions (usually it's the result of transpiling)
               ReturnStatement(path) {
                 if (path.node.argument.type === 'SequenceExpression') {
-                  const { expressions } = path.node.argument;
-
-                  path.replaceWithMultiple(expressions.map(e => t.expressionStatement(e)));
+                  path.replaceWithMultiple(
+                    path.node.argument.expressions.map(e => t.expressionStatement(e))
+                  );
                 }
               }
             });
@@ -108,7 +108,7 @@ module.exports = function (babel) {
               )
             ]);
           }
-        }
+        });
       }
     }
   };

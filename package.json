@@ -1,6 +1,6 @@
 {
   "name": "babel-plugin-ember-legacy-class-constructor",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Babel transform to make ES Class constructors work with legacy Ember versions",
   "main": "index.js",
   "repository": "https://github.com/pzuraq/babel-plugin-ember-legacy-class-constructor",

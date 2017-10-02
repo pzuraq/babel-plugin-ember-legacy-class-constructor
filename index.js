@@ -5,7 +5,7 @@ module.exports = function (babel) {
     name: 'ember-legacy-class-constructor',
     visitor: {
       Class(classPath) {
-        classPath.get('body.body').forEach(() => {
+        classPath.get('body.body').forEach((path) => {
           // loop over the body to see if a constructor exists
           if (path.node.kind === 'constructor') {
             const body = path.node.body.body;

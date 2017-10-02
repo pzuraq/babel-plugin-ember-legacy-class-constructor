@@ -30,33 +30,49 @@ module.exports = function (babel) {
               // a series of expressions (usually it's the result of transpiling)
               ReturnStatement(path) {
                 if (path.node.argument.type === 'SequenceExpression') {
-                  const expressions = path.node.argument.expressions;
+                  const { expressions } = path.node.argument;
 
-                  const finalReturn = expressions.pop();
-                  const expressionStatements = expressions.map(e => t.expressionStatement(e));
-
-                  path.replaceWithMultiple(
-                    ...expressionStatements,
-                    finalReturn
-                  );
+                  path.replaceWithMultiple(expressions.map(e => t.expressionStatement(e)));
                 }
               }
             });
 
-            // Add a constructor to call init for non-Ember Object classes
-            const constructorBody = [
-              t.returnStatement(
-                t.callExpression(
+            body.push(
+              t.expressionStatement(
+                t.assignmentExpression(
+                  '=',
                   t.memberExpression(
                     t.thisExpression(),
-                    t.identifier('init')
+                    t.identifier('__emberLegacyDidInit')
                   ),
-                  [
-                    t.spreadElement(
-                      t.identifier('arguments')
-                    )
-                  ]
+                  t.booleanLiteral(true)
                 )
+              )
+            );
+
+            // Add a constructor to call init for non-Ember Object classes
+            const constructorBody = [
+              t.ifStatement(
+                t.binaryExpression(
+                  '!==',
+                  t.memberExpression(t.thisExpression(), t.identifier('__emberLegacyDidInit')),
+                  t.booleanLiteral(true)
+                ),
+                t.blockStatement([
+                  t.expressionStatement(
+                    t.callExpression(
+                      t.memberExpression(
+                        t.thisExpression(),
+                        t.identifier('init')
+                      ),
+                      [
+                        t.spreadElement(
+                          t.identifier('arguments')
+                        )
+                      ]
+                    )
+                  )
+                ])
               )
             ];
 
@@ -67,8 +83,11 @@ module.exports = function (babel) {
               constructorBody.unshift(
                 t.expressionStatement(
                   t.callExpression(
-                    t.super(),
-                    [t.stringLiteral('EMBER_LEGACY_SHORT_CIRCUIT')]
+                    t.super(), [
+                      t.spreadElement(
+                        t.identifier('arguments')
+                      )
+                    ]
                   )
                 )
               );
@@ -84,13 +103,8 @@ module.exports = function (babel) {
               t.classMethod(
                 'constructor',
                 t.identifier('constructor'),
-                [t.identifier('shortCircuit')],
-                t.blockStatement([
-                  t.ifStatement(
-                    t.binaryExpression('!==', t.identifier('shortCircuit'), t.stringLiteral('EMBER_LEGACY_SHORT_CIRCUIT')),
-                    t.blockStatement(constructorBody)
-                  )
-                ])
+                [],
+                t.blockStatement(constructorBody)
               )
             ]);
           }
